@@ -1,2 +1,0 @@
-export const username = 'CZAIXNzTc3JZdkTduR5EjocbDiVuNXKL2SvOQ1SI';
-export const password = 'weD6DUVpm47DssgCso1Da5qFYXkCbUYMJbgB6KvHUmoSwQ8JyBZn6KqX5fW7VYHQwW8ZLf6egZRYL52HoT8cI0IFBdh4oVrqBE8aTRAYODdGcYiAXLsPCtuSwDqcj9io';
