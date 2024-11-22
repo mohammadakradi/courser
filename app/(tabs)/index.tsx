@@ -1,9 +1,27 @@
+import CourseItem from "@/components/CourseItem";
 import { HelloWave } from "@/components/HelloWave";
+import { password, username } from "@/utils/apikeys";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { useQuery } from "@tanstack/react-query";
+import axios from "axios";
 import { router } from "expo-router";
 import { useState } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, FlatList, Pressable, ScrollView, Text, View } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
+
+interface Course {
+  id: number;
+  title: string;
+  subtitle: string;
+  image_480x270: string;
+  is_paid: boolean;
+  price: string;
+  num_reviews: number
+}
+
+interface SearchResponse {
+  results: Course[];
+}
 
 interface Category {
   id: string;
@@ -21,9 +39,26 @@ const categories: Category[] = [
   {id: "lifestyle", name: "Lifestyle", icon: "heart"},
 ]
 
+const fetchCourses = async (searchTerm: string): Promise<SearchResponse> => {
+  const response = await axios.get(`https://www.udemy.com/api-2.0/courses/`, {
+    params: {search: searchTerm},
+    auth: {
+      username: username,
+      password: password,
+    }
+  })
+
+  return response.data
+}
 
 export default function HomeScreen() {
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string>('business');
+
+  const {data, error, isLoading, refetch} = useQuery({
+    queryKey: ["searchCourses", selectedCategory],
+    queryFn: () => fetchCourses(selectedCategory),
+    enabled: true
+  })
 
   const renderCategory = (item: Category) => (
     <Pressable onPress={() => setSelectedCategory(item.id)}
@@ -108,10 +143,32 @@ export default function HomeScreen() {
               ))
             }
           </ScrollView>
-          <View>
-
-          </View>
         </Animated.View>
+
+        {/* Category Courses */}
+        {
+          isLoading ? (
+            <View className="flex-1 justify-center items-center">
+              <ActivityIndicator size="large" color="#2563eb" />
+            </View>
+          ) : error ? (
+            <Text>Error: {(error as Error).message}</Text>
+          ) : data?.results ? (
+            <FlatList 
+              horizontal={true}
+              data={data.results}
+              renderItem={({item}) => {
+                return <CourseItem course={item} customStyle="w-[22rem] pl-6" />
+              }}
+              keyExtractor={(item) => item.id.toString()}
+              showsHorizontalScrollIndicator={false}
+            />
+          ) : (
+            <View className="flex-1 justify-center items-center">
+              <Text>No courses founded. Try another topic.</Text>
+            </View>
+          )
+        }
       </ScrollView>
     </View>
   );
