@@ -1,5 +1,6 @@
 import CourseItem from "@/components/CourseItem";
 import { HelloWave } from "@/components/HelloWave";
+import { Course } from "@/types/types";
 import { password, username } from "@/utils/apikeys";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
@@ -8,16 +9,6 @@ import { router } from "expo-router";
 import { useState } from "react";
 import { ActivityIndicator, FlatList, Pressable, ScrollView, Text, View } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
-
-interface Course {
-  id: number;
-  title: string;
-  subtitle: string;
-  image_480x270: string;
-  is_paid: boolean;
-  price: string;
-  num_reviews: number
-}
 
 interface SearchResponse {
   results: Course[];
@@ -51,6 +42,17 @@ const fetchCourses = async (searchTerm: string): Promise<SearchResponse> => {
   return response.data
 }
 
+const fetchRecommendedCourses = async (): Promise<SearchResponse> => {
+  const response = await axios.get(`https://www.udemy.com/api-2.0/courses/`, {
+    auth: {
+      username: username,
+      password: password,
+    }
+  })
+
+  return response.data
+}
+
 export default function HomeScreen() {
   const [selectedCategory, setSelectedCategory] = useState<string>('business');
 
@@ -59,6 +61,18 @@ export default function HomeScreen() {
     queryFn: () => fetchCourses(selectedCategory),
     enabled: true
   })
+
+  const {
+    data: recommendedCourses,
+    error: recommendedCoursesError,
+    isLoading: recommendedCoursesLoading
+  } = useQuery({
+    queryKey: ["recommendedCourses"],
+    queryFn: () => fetchRecommendedCourses(),
+  })
+
+
+  console.log("Data: ", recommendedCourses, recommendedCoursesError, recommendedCoursesLoading)
 
   const renderCategory = (item: Category) => (
     <Pressable onPress={() => setSelectedCategory(item.id)}
@@ -123,7 +137,6 @@ export default function HomeScreen() {
             <Text className="text-xl"
               style={{'fontFamily': 'BarlowSemiBold'}}
             >Explore Topics</Text>
-
             <Text className="text-blue-700" style={{'fontFamily': 'BarlowSemiBold'}}>See more</Text>
           </View>
 
@@ -169,6 +182,41 @@ export default function HomeScreen() {
             </View>
           )
         }
+
+        {/* Recommended Courses */}
+        <View className="pt-6">
+          <View className="flex-row justify-between px-6 pt-4 items-center">
+            <Text className="text-xl"
+              style={{'fontFamily': 'BarlowSemiBold'}}
+            >Recommended Courses</Text>
+            <Text className="text-blue-700" style={{'fontFamily': 'BarlowSemiBold'}}>See more</Text>
+          </View>
+
+        {/* Recommended Courses */}
+        {
+          recommendedCoursesLoading ? (
+            <View className="flex-1 justify-center items-center pt-8">
+              <ActivityIndicator size="large" color="#2563eb" />
+            </View>
+          ) : recommendedCoursesError ? (
+            <Text>Error: {(recommendedCoursesError as Error).message}</Text>
+          ) : recommendedCourses?.results && recommendedCourses.results.length > 0 ? (
+            <FlatList 
+              horizontal={true}
+              data={recommendedCourses.results}
+              renderItem={({item}) => {
+                return <CourseItem course={item} customStyle="w-[22rem] pl-6" />
+              }}
+              keyExtractor={(item) => item.id.toString()}
+              showsHorizontalScrollIndicator={false}
+            />
+          ) : (
+            <View className="flex-1 justify-center items-center pt-8">
+              <Text>There is no recommended courses.</Text>
+            </View>
+          )
+        }
+        </View>
       </ScrollView>
     </View>
   );
