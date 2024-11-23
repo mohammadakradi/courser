@@ -71,9 +71,6 @@ export default function HomeScreen() {
     queryFn: () => fetchRecommendedCourses(),
   })
 
-
-  console.log("Data: ", recommendedCourses, recommendedCoursesError, recommendedCoursesLoading)
-
   const renderCategory = (item: Category) => (
     <Pressable onPress={() => setSelectedCategory(item.id)}
       className="mr-4 p-2 rounded-full items-center flex-col gap-4"
