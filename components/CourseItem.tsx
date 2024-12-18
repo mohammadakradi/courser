@@ -4,6 +4,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { Course } from '@/types/types';
 import { useWishlistStore } from '@/store/wishlistStore';
+import { router } from 'expo-router';
 
 interface CourseItemProps {
     course: Course;
@@ -25,7 +26,12 @@ const CourseItem: React.FC<CourseItemProps> = ({course, customStyle, index}) => 
         }
     }
   return (
-    <Pressable className={"pt-4 " + (customStyle ? customStyle : "")}>
+    <Pressable className={"pt-4 " + (customStyle ? customStyle : "")}
+        onPress={() => router.push({
+            pathname: "/courseDetail",
+            params: {courseId: course.id}
+        })}
+    >
         <Animated.View 
             className='gap-2 w-full border border-gray-300 overflow-hidden rounded-2xl'
             entering={FadeInDown.duration(100).delay(index * 300).springify()}
