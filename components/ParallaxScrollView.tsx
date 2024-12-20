@@ -72,5 +72,9 @@ const styles = StyleSheet.create({
     padding: 32,
     gap: 16,
     overflow: 'hidden',
+    paddingTop: HEADER_HEIGHT / 10,
+    marginTop: -HEADER_HEIGHT / 10,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
   },
 });
