@@ -20,6 +20,7 @@
     "@gluestack-ui/nativewind-utils": "^1.0.23",
     "@gluestack-ui/overlay": "^0.1.16",
     "@gluestack-ui/toast": "^1.0.8",
+    "@lottiefiles/react-lottie-player": "^3.5.4",
     "@react-navigation/native": "^6.0.2",
     "@tanstack/react-query": "^5.61.0",
     "axios": "^1.7.7",

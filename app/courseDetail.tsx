@@ -1,12 +1,14 @@
-import { View, Text, Image, Pressable, ListRenderItem } from 'react-native'
+import { View, Text, Image, Pressable, ListRenderItem, ActivityIndicator } from 'react-native'
 import React, { useState } from 'react'
 import axios from 'axios'
 import { Course, CurriculumItem, ReviewItem } from '@/types/types'
 import { password, username } from '@/utils/apikeys'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLocalSearchParams } from 'expo-router'
 import ParallaxScrollView from '@/components/ParallaxScrollView'
 import { FlatList } from 'react-native-gesture-handler'
+import { Ionicons } from '@expo/vector-icons'
+import CurriculumList from '@/components/CurriculumList'
 
 const fetchCourseDetail = async (courseId: string): Promise<Course> => {
   const response = await axios.get<Course>(`https://www.udemy.com/api-2.0/courses/${courseId}`, {
@@ -78,10 +80,26 @@ const SegmentedControl: React.FC<{
     </View>
 )
 
+const StarRating: React.FC<{rating: number}> = ({rating}) => {
+    return (
+        <View className='flex-row'>
+            {
+                [1, 2, 3, 4, 5].map((star) => (
+                    <Ionicons key={star} name={star <= rating ? "star" : "star-outline"}
+                        size={16} color={star <= rating ? "#e68801" : "#D3D3D3" }
+                    />
+                ))
+            }
+        </View>
+    )
+}
+
 const CourseDetail = () => {
     const {courseId} = useLocalSearchParams<{courseId: string}>();
     const [selectedSegment, setSelectedSegment] = useState<"curriculum" | "reviews">("curriculum")
     const [curriculumPage, setCurriculumPage] = useState(1)
+
+    const queryClient = useQueryClient();
 
     // Course detail
     const {data, error, isLoading, refetch} = useQuery<Course>({
@@ -112,12 +130,57 @@ const CourseDetail = () => {
         enabled: !!courseId
     })
 
+    const loadMoreCurriculum = () => {
+        if(curriculumData.next){
+            setCurriculumPage((prev) => prev + 1)
+        }
+    }
+
+    const mergedCurriculumData = React.useMemo(() => {
+        if (!curriculumData) return undefined
+
+        const prevData = queryClient.getQueryData<typeof curriculumData>(
+            ["coursecurriculum", courseId, curriculumPage - 1]
+        )
+
+        return {
+            ...curriculumData,
+            results: [...(prevData?.results || []), ...curriculumData.results]
+        }
+    }, [curriculumData, curriculumPage, courseId, queryClient])
+
+    if(isLoading || (curriculumIsLoading && curriculumPage ===1)){
+        return (
+            <View className='flex-1 items-center justify-center'>
+                <ActivityIndicator size="large" color="#000" />
+            </View>
+        )
+    }
+
+    if(error || curriculumError || reviewsError){
+        return (
+            <View className='flex-1 items-center justify-center'>
+                <Text>Sorry!something went wrong... {((error || curriculumError || reviewsError) as Error).message}</Text>
+            </View>
+        )
+    }
+
+    if(!data){
+        return (
+            <View className='flex-1 items-center justify-center'>
+                <Text className='text-2xl' style={{fontFamily: "BarlowBold"}}>No Data Available</Text>
+            </View>
+        )
+    }
+
     const renderReviewsItem: ListRenderItem<ReviewItem> = ({item}) => (
         <View key={item.id} className='mb-4 border-t border-neutral-300 rounded-lg'>
             <View className='flex-row justify-between items-center mb-2'>
-                <Text className='text-lg font-bold'>
+                <Text className='text-lg font-bold max-w-64'>
                     {item.user?.display_name}
                 </Text>
+
+                <StarRating rating={item.rating} />
             </View>
             <Text className='text-gray-500 text-sm'
                 style={{fontFamily: "BarlowMedium"}}
@@ -127,7 +190,7 @@ const CourseDetail = () => {
 
             {
                 item.content ? (
-                    <Text className='text-gray-600 mt-2 capitalize'>
+                    <Text className='text-gray-600 mt-2 capitalize' style={{fontFamily: "BarlowBold"}}>
                         {item.content}
                     </Text>
                 ) : (
@@ -199,11 +262,9 @@ const CourseDetail = () => {
 
             {selectedSegment === "reviews" ? (
                 <>
-                    <Text className='text-2xl pb-4' style={{
-                        fontFamily: "BarlowBold"
-                    }}>
-                        {reviewsData?.count}
-                    </Text>
+                <Text className='text-2xl pb-4' style={{fontFamily: "BarlowBold"}}>
+                    Reviews ({reviewsData?.count})
+                </Text>
                     <FlatList
                         nestedScrollEnabled={true}
                         scrollEnabled={false}
@@ -214,11 +275,10 @@ const CourseDetail = () => {
                 </>
             ) : (
                 <>
-                    <Text className='text-2xl pb-4' style={{
-                        fontFamily: "BarlowBold"
-                    }}>
-
-                    </Text>
+                    <CurriculumList curriculumData={mergedCurriculumData} 
+                        isLoading={curriculumIsLoading}
+                        onLoadMore={loadMoreCurriculum}
+                    />
                 </>
             )
         }
